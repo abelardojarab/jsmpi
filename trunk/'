@@ -1,0 +1,41 @@
+import( "MPI" );
+import( "io", true );
+import("")
+
+Me = MPI.Rank();
+Threads = MPI.Size();
+//funct = function(a){ return a+1} 
+obj= new Object();
+obj1= new Object();
+obj2= new Object();
+obj1.set(1, "Obj1val1");
+obj1.set(2, "Obj1val2");
+obj1.set(1, "Obj2val1");
+obj1.set(2, "Obj2val2");
+obj.set(1, obj1);
+obj.set(2, obj2);
+obj.set(3, obj);
+sarr = [];
+
+for(i=0; i<10;i++)
+	sarr[i] = "Hello "+i;
+
+if ( Me != 0 )
+{
+
+	Hello = MPI.Recv();
+	print( "Recieved Successfully " + Me );
+	print(Hello);
+
+}
+else
+{
+	for ( i=1; i<Threads; i++ )
+	{
+		t1=MPI.Wtime();
+		print("Start sending");
+		MPI.Send( obj, i, Me );
+		t2=MPI.Wtime();
+		print("Sent successfully to " + i + " in " + (t2-t1) + "S:ecs");
+	}
+}
