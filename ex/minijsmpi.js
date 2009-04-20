@@ -20,7 +20,7 @@ import("io", true);
 		return countn}
 
 	equal = function(emycube, ex){ // mycube and ex are of "cube" datatype
-		//print("Entering equal")
+		print("Entering equal")
 		ecount = 0
 		var n=0
 		for(n=0; n < emycube.length; n++)
@@ -34,7 +34,7 @@ import("io", true);
 			return false;}
 
 	equalx = function(exmycube, exx){
-		//print("Entering equalx")
+		print("Entering equalx")
 		for(exj=0; exj < exmycube.length; exj++)
 		{
 			if(((check0(exx[exj])) && (check1(exmycube[exj]))) || ((check1(exx[exj])) && (check0(exmycube[exj]))))
@@ -61,7 +61,7 @@ import("io", true);
 		print("\n");}
 
 	absorb = function(a, b){
-		//print("Entering absorb")
+		print("Entering absorb")
 		if(nofx(a) == nofx(b))
 		{
 			////print("Cannot reduce" );
@@ -124,7 +124,7 @@ import("io", true);
 		}}
 
 	binate = function(a){ // datatype of a is cover
-	//print("Entering binate")
+	print("Entering binate")
 		vsize = 0;
 		counter = [];
 		
@@ -154,7 +154,7 @@ import("io", true);
 		return bivar }
 
 	tautology =  function(a){ // Datatype of a is cover
-	//print("Entering tautology")
+	print("Entering tautology")
 		//  //print("COVER CHECK" );
 		//  //print(a.length);
 		//  for( i=0;i<a.length;i++)
@@ -364,7 +364,7 @@ import("io", true);
 }
 
 	absorption = function(){
-		//print("Entering absorption")
+		print("Entering absorption")
 		abscount=0;
 		print("Absorb cover of size " + cover.length);
 		absj=0;	
@@ -427,7 +427,7 @@ import("io", true);
 }
 
 	rabsorb = function(a, index){ // a and index are unsighend ints
-	//print("Entering rabsorb")
+	print("Entering rabsorb")
 		rtemp = [];
 		tcube = cover[a];
 		tindex = 0;
@@ -475,7 +475,7 @@ import("io", true);
 
 	cabsorb = function(a, index) // called in main as i=casorb(temp,i), temp is temporary cube, cover[i] cube under analysis
 	{
-	//print("Entering cabsorb")
+	print("Entering cabsorb")
 	ctemp = [];
 	acount = 0;
 	tindex = 0;
@@ -698,8 +698,10 @@ import("io", true);
 					reduce = false;
 					if(checkx(cover[mai][maj]))
 					{
-						assign0(cover[mai][maj]);
-						assign1(temp[maj]);
+						//assign0(cover[mai][maj]);
+						cover[mai][maj] = '0';
+						//assign1(temp[maj] = '1';
+						temp[maj] = '1';
 						for( mak = 0; mak < cover.length; mak++)
 						{
 							if(absorb(temp,cover[k])) //call to absorb
@@ -717,8 +719,10 @@ import("io", true);
 						else
 						{
 							// //print("REDUCE ZERO NOT ALLOWED" + maj);
-							assign1(cover[mai][maj]);
-							assign0(temp[maj]);
+							//assign1(cover[mai][maj]);
+							cover[mai][maj] = '1';
+							//assign0(temp[maj]);
+							temp[maj] = '0';
 							for( k=0; k < cover.length; k++)
 							{
 								if(absorb(temp,cover[k])) //call to absorb
@@ -735,7 +739,8 @@ import("io", true);
 							else
 							{
 								// //print("REDUCE ONE NOT ALLOWED" );
-								assignx(cover[mai][maj]);
+								//assignx(cover[mai][maj]);
+								cover[mai][maj] = '-';
 								maj++;
 							}
 						}
