@@ -353,18 +353,13 @@ with (io)
             else
 						{
                 printf(" ");
-								fflush(stdout);
-								fflush(stderr);
 						}
         
             String::Utf8Value str( args[i] );
             fputs( *str, stdout );
-						fflush(stdout);
-						fflush(stderr);
         }
         fputc( '\n', stdout );
         fflush( stdout );
-				fflush(stderr);
         
         return Undefined();
     %>;

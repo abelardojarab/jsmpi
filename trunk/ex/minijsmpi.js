@@ -20,7 +20,7 @@ import("io", true);
 		return countn}
 
 	equal = function(emycube, ex){ // mycube and ex are of "cube" datatype
-		print("Entering equal")
+		//print("Entering equal")
 		ecount = 0
 		var n=0
 		for(n=0; n < emycube.length; n++)
@@ -34,7 +34,7 @@ import("io", true);
 			return false;}
 
 	equalx = function(exmycube, exx){
-		print("Entering equalx")
+		//print("Entering equalx")
 		for(exj=0; exj < exmycube.length; exj++)
 		{
 			if(((check0(exx[exj])) && (check1(exmycube[exj]))) || ((check1(exx[exj])) && (check0(exmycube[exj]))))
@@ -61,7 +61,7 @@ import("io", true);
 		print("\n");}
 
 	absorb = function(a, b){
-		print("Entering absorb")
+		//print("Entering absorb")
 		if(nofx(a) == nofx(b))
 		{
 			////print("Cannot reduce" );
@@ -124,7 +124,7 @@ import("io", true);
 		}}
 
 	binate = function(a){ // datatype of a is cover
-	print("Entering binate")
+	//print("Entering binate")
 		vsize = 0;
 		counter = [];
 		
@@ -154,7 +154,7 @@ import("io", true);
 		return bivar }
 
 	tautology =  function(a){ // Datatype of a is cover
-	print("Entering tautology")
+	//print("Entering tautology" + MPI.Rank())
 		//  //print("COVER CHECK" );
 		//  //print(a.length);
 		//  for( i=0;i<a.length;i++)
@@ -427,7 +427,7 @@ import("io", true);
 }
 
 	rabsorb = function(a, index){ // a and index are unsighend ints
-	print("Entering rabsorb")
+	//print("Entering rabsorb")
 		rtemp = [];
 		tcube = cover[a];
 		tindex = 0;
@@ -475,7 +475,7 @@ import("io", true);
 
 	cabsorb = function(a, index) // called in main as i=casorb(temp,i), temp is temporary cube, cover[i] cube under analysis
 	{
-	print("Entering cabsorb")
+	//print("Entering cabsorb")
 	ctemp = [];
 	acount = 0;
 	tindex = 0;
@@ -560,7 +560,7 @@ import("io", true);
 		//next we measure the time in node 0  
 		wtime = MPI.Wtime()
 
-		//print("Before absorption " + cover.length)
+		print("Before absorption " + cover.length)
 		absorption()
 
 		isize = cover.length;
@@ -594,12 +594,12 @@ import("io", true);
 			wtime_comm=MPI.Wtime()
 
 			//print("Broadcasting the cover of length "+ cover.length + "First 2 implicants " + cover[0] + "\t" + cover[1] + "last 2 implicant" + cover[cover.length-2] + "\t" + cover[cover.length-1])
-			print("Broadcasting the cover")
+			//print("Broadcasting the cover")
 			//print("Cover length "+cover.length)
 			pieces = MPI.Pack_size(cover)
-			print("Pack size required for full data " + pieces)
+			//print("Pack size required for full data " + pieces)
 			pieces = (pieces/4096)
-			print("Root made "+pieces)
+			//print("Root made "+pieces)
 			MPI.Send(pieces)
 			//print("# of pieces " + pieces)
 			for(i = 0; i < pieces; i++)
@@ -608,7 +608,7 @@ import("io", true);
 				//print("Pack size required for sliced data" + MPI.Pack_size(temps))
 				MPI.Send(temps)
 			}
-			print("Broadcast complete")
+			//print("Broadcast complete")
 
 			total_comm+=MPI.Wtime()-wtime_comm;
 
@@ -704,7 +704,7 @@ import("io", true);
 						temp[maj] = '1';
 						for( mak = 0; mak < cover.length; mak++)
 						{
-							if(absorb(temp,cover[k])) //call to absorb
+							if(absorb(temp,cover[mak])) //call to absorb
 							{
 								reduce = true;
 								break;
@@ -775,21 +775,22 @@ import("io", true);
 		}
 
 		wtime = MPI.Wtime()-wtime;
-		for( i=0; i < cover.length;i++)
-		{
+		//for( i=0; i < cover.length;i++)
+		//{
 			//print(cover[i]);
-		}
+		//}
 
-		//print("Final cover size is: " + cover.length)
-		//print("Wall clock elapsed seconds = " + wtime)
-		//print("Total time spent in transmitting the cover was = " + total_comm)
+
+		print("Final cover size is: " + cover.length)
+		print("Wall clock elapsed seconds = " + wtime)
+		print("Total time spent in transmitting the cover was = " + total_comm)
 
 
 
 	} //end for if for id==0
 	else { //do this if id is not 0
 		step=0;
-
+		x = '-'
 		while(1) { //keep waiting for the master to be sending tasks to them
 			////print("Node #" + id + ": Starting external loop." );
 
@@ -805,10 +806,10 @@ import("io", true);
 			//print("Node #" + id + ": Received a cover size of " + N)
 			//print("Node #" + id + ": Received an implicant size of " + l)
 
-			print("Recieving Broadcasted cover")
+			//print("Recieving Broadcasted cover")
 			pieces = 0.0
 			pie = MPI.Send(pieces)
-			print("Rx "+pie)
+			//print("Rx "+pie)
 			localcover = []
 			cover = []
 			//print("**************************" + pie);
@@ -818,7 +819,7 @@ import("io", true);
 				localcover = localcover.concat(tempr)
 			}
 			//localcover = localcover.concat(MPI.Send(temp))
-			print("Recieved cover length "+localcover.length)
+			//print("Recieved cover length "+localcover.length)
 
 			//localcover = new Array(lcover)
 			//print("Recieved Cover of size " + localcover.length + " first element " + localcover[0] + " last element " + localcover[localcover.length-1])
@@ -881,6 +882,7 @@ import("io", true);
 					}
 				}  //if of trying to raise 0 or 1 to DC
 
+				print("done with tautology " + temp[j])
 				MPI.Send(temp[j], 0, j) //send the value of the bit and set tag to j-th
 			}
 			/************Here ends the code which has been migrated to the nodes***********/
