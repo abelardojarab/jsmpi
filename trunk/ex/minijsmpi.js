@@ -1,27 +1,30 @@
 import("MPI")
 import("io", true);
 
+	id = MPI.Rank();
+	sys_size = MPI.Size();
 ////// ********** Global Variables and handy function ************** ////////
-	cover = [];
-	high = function(a){ if(a == "1" || a== "-" ) return 1; else return 0;}
-	low = function(a){ if(a == "0" || a== "-" ) return 1; else return 0;}
+	high = function(mychar){ if(mychar == "1" || mychar == "-" ) return 1; else return 0}
+	low = function(mychar){ if(mychar == "0" || mychar == "-" ) return 1; else return 0}
 	check1 = function(mychar){ if((high(mychar))&&(!low(mychar))) return true;	else return false;}
 	check0 = function(mychar){ if((!high(mychar))&&(low(mychar))) return true;	else return false;}
 	checkx = function(mychar){ if( mychar == "-" ) return true;	else return false;}
 	
 	nofx = function(nmycube){
-		countn=0
+		var countn=0
 		var m=0
+		//print(id +" nofx " + nmycube)
 		for(m=0; m < nmycube.length; m++)
 		{
 			if(checkx(nmycube[m]))
 				countn++
 		}
+		//print("countn " + countn)
 		return countn}
 
 	equal = function(emycube, ex){ // mycube and ex are of "cube" datatype
 		//print("Entering equal")
-		ecount = 0
+		var ecount = 0
 		var n=0
 		for(n=0; n < emycube.length; n++)
 		{
@@ -33,71 +36,59 @@ import("io", true);
 		else
 			return false;}
 
-	equalx = function(exmycube, exx){
+	equalx = function(exmycube, exx){ //exmycube and exx are "cube" datatype
+
 		//print("Entering equalx")
+		var exj = 0
 		for(exj=0; exj < exmycube.length; exj++)
 		{
 			if(((check0(exx[exj])) && (check1(exmycube[exj]))) || ((check1(exx[exj])) && (check0(exmycube[exj]))))
-				return false;
+				return false
 		}
-		return true;}
-
-	cubeprint = function(c1mycube){
-		//print("Entering cubeprint1")
-		var c1j=0
-		for(c1j=0; c1j < c1mycube.length; c1j++)
-		{
-			cubeprint(c1mycube[c1j]);
-		}
-		print("\n");}
+		return true}
 
 	cubeprint = function(c2mycube, cl){
 		//print("Entering cubeprint2")
 		var c2j=0
 		for(c2j = 0; c2j <= cl; c2j++)
 		{
-			cubeprint(c2mycube[c2j]);
+			print(c2mycube[c2j]);
 		}
 		print("\n");}
 
 	absorb = function(a, b){
-		//print("Entering absorb")
+		//print(id  + " Entering absorb")
+		var f1
+		var f2
 		if(nofx(a) == nofx(b))
 		{
-			////print("Cannot reduce" );
+			//print("Cannot reduce" );
 			return false;
 		}
 		else
 		{
-			//cuenta++;
 			if((nofx(a)) < (nofx(b)))
 			{
-				f1 = b;
-				f2 = a;
+				f1 = b
+				f2 = a
 		
 			}
 			else
 			{
-				f1 = a;
-				f2 = b;
+				f1 = a
+				f2 = b
 			}
 		}
-		mcount = 0;
+		var mcount = 0
 		var abj=0
 		for(abj=0; abj < f1.length; abj++)
 		{
-			//if((f1[abj].check0()&&f2[abj].check1())||(f2[abj].check0()&&f1[abj].check1()))
 			if((check0(f1[abj]) && check1(f2[abj])) || (check0(f2[abj]) && check1(f1[abj])))
 			{
-				//     //print("Disjo" );
-				return false;
+				return false
 			}
 			else
 			{
-		
-				////print("Mcount: " + mcount);
-				////print(a);
-				////print(b);
 		
 				if(checkx(f1[abj]))
 				{
@@ -111,38 +102,33 @@ import("io", true);
 		}
 		if(mcount == f1.length)
 		{
-		
-			////print("Absorbing " );
-			////print(f1);
-			////print(f2);
-		
-			return true;
+			return true
 		}
 		else
 		{
-			return false;
-		}}
+			return false
+		}
+	}
 
 	binate = function(a){ // datatype of a is cover
 	//print("Entering binate")
-		vsize = 0;
-		counter = [];
-		
-		//counter=(*) malloc(vsize*sizeof()); //allocate memory, visual c++ claims about this
-		
-		xcount = 0;
-		bivar = 0;
+		var vsize = 0
+		var counter = []
+		var xcount = 0
+		var bivar = 0
+		var bii = 0
+		var bij =0
 		for(bii=0; bii < a.length; bii++)
 		{
-			for(bij=0; bij < a[bii].length; bij++)
+			for(bij=0; bij < a[0].length; bij++)
 			{
 				if(bii == 0)
-					counter[bij] = 0;
+					counter[bij] = 0
 				if(!checkx(a[bii][bij]))
-					counter[bij]++;
+					counter[bij] = (counter[bij] + 1)
 			}
 		}
-		for(bii=0; bii < a.length; bii++)
+		for(bii=0; bii < a[0].length; bii++)
 		{
 			if(counter[bii] > xcount)
 			{
@@ -150,224 +136,220 @@ import("io", true);
 				bivar = bii;
 			}
 		}
-		//free(counter); //added this line, not in original source code
-		return bivar }
+		return bivar 
+	}
 
 	tautology =  function(a){ // Datatype of a is cover
 	//print("Entering tautology" + MPI.Rank())
-		//  //print("COVER CHECK" );
-		//  //print(a.length);
-		//  for( i=0;i<a.length;i++)
-		//  a[i].//print();
-		vsize = a[0].length
 		if(a.length <= 0)
 		{
 				 //print("EMPTY COVER" );
-			return false;
+			return false
 		}
-		for(tauti=0; tauti < vsize; tauti++)
+		vsize = a[0].length
+		var tauti=0
+		for(tauti=0; tauti < a.length; tauti++)
 		{
 			if((nofx(a[tauti])) == vsize)
 			{
-						 //print("ALL BLANKS" );
-				return true;
+						 //print("ALL BLANKS" )
+				return true
 			}
 		}
 		for(tauti=0; tauti < vsize; tauti++)
 		{
-			only1 = true;
-			only0 = true;
+			var only1 = true
+			var only0 = true
+			var tautj = 0
 			for(tautj=0; tautj < a.length; tautj++)
 			{
 				if(checkx(a[tautj][tauti]))
 				{
-					only0 = false;
-					only1 = false;
-					break;
+					only0 = false
+					only1 = false
+					break
 				}
 				else
 				{
 					if(check0(a[tautj][tauti]))
 					{
-						only1 = false;
+						only1 = false
 					}
 					if(check1(a[tautj][tauti]))
 					{
-						only0 = false;
+						only0 = false
 					}
 					if((!only1) && (!only0))
 					{
-						break;
+						break
 					}
 				}
 			}
 			if(only1 || only0)
 			{
 				//      //print("COLUMN WITH ONLY 0s or 1s" );
-				return false;
+				return false
 			}
 		}
-		DC1 = []; // Datatype is cover type
+		var DC1 = [] // Datatype will be cover type
 		//DC1[0]=[];
-		DCN = [];// Datatype is cover type
+		var DCN = []// Datatype will be cover type
 		//DCN[0] = [];
-		ureduction = true;
+		var ureduction = true
 		for(tauti=0; tauti < a.length; tauti++)
 		{
 			if((!checkx(a[tauti][0])) && (!checkx(a[tauti][vsize-1])))
 			{
-				ureduction = false;
-				break;
+				ureduction = false
+				break
 			}
 			else
 			{
 				if(checkx(a[tauti][0]))
 				{
-					ttemp = []; // DataType cube
-					for(tautj=0; tautj < a[tauti].length; tautj++)
+					var ttemp = "" // DataType cube
+					for(tautj=1; tautj < a[tauti].length; tautj++)
 					{
-						ttemp.push(a[tauti][tautj]);
+						ttemp=ttemp.concat(a[tauti][tautj])
 					}
-					DC1.push(ttemp); // DataType Cover
+					DC1.push(ttemp) // DataType Cover
 				}
 				if(checkx(a[tauti][vsize-1]))
 				{
-					ttemp = [];//
-					for(tautk = 0; tautk < (a[tauti].length-1) ; tautk++)
+					var ttemp = ""
+					var tautk = 0
+					for(tautk = 0; tautk < ((a[tauti].length) -1) ; tautk++)
 					{
-						ttemp.push(a[tauti][tautk]);
+						ttemp=ttemp.concat(a[tauti][tautk])
 					}
-					DCN.push(ttemp);
+					DCN.push(ttemp)
 				}
 			}
 		}
 		if(ureduction)
 		{
-			//   //print("printing DC1" );
-			//   for( tauti =0;tauti<DC1.length;tauti++)
-			//   DC1[tauti].//print();
-			//   //print("printing DCN" );
-			//   for( tauti =0;tauti<DCN.length;tauti++)
-			//   DCN[tauti].//print();
 			if(DC1.length < DCN.length)
 			{
 				if(tautology(DC1))
-					return true;
+					return true
 				else if(tautology(DCN))
-					return true;
+					return true
 				else
 				{
-					//       //print("UNATE REDUCTION FAILED" );
-					return false;
+								//print("UNATE REDUCTION FAILED" );
+					return false
 				}
 			}
 			else
 			{
 				if(tautology(DCN))
-					return true;
+					return true
 				else if(tautology(DC1))
-					return true;
+					return true
 				else
 				{
-					//       //print("UNATE REDUCTION FAILED" );
-					return false;
+								//print("UNATE REDUCTION FAILED" );
+					return false
 				}
 			}
 		}
 		else
 		{
-			//vector<cube> cox;
-			//vector<cube> cox_;
-			cox = [];
-			cox_ = [];
-			//char tautx;
-			tautx='-';
-			tauti = binate(a);
-			c=0;
-			c_=0;
-			//   //print("Cofactor variable " + tauti);
-			for(tautj=1; tautj < a.length; tautj++)
+			var cox = []
+			var cox_ = []
+			var tautx="-"
+			var tauti = binate(a)
+			for(tautj=0; tautj < a.length; tautj++)
 			{
-				//cube temp;
-				ttemp = [];
+				var ttemp = ""
 				if(check0(a[tautj][tauti]))
 				{
 					for(tautk=0; tautk < a[tautj].length; tautk++)
 					{
 						if(tautk!=tauti)
-							ttemp.push(a[tautj][tautk]);
+						{
+							ttemp=ttemp.concat(a[tautj][tautk])
+						}
 						else
 						{
-							ttemp.push(tautx);
+							ttemp=ttemp.concat(tautx)
 						}
 					}
-					c_ = cox_.push(ttemp);
+					cox_.push(ttemp)
 				}
 				else if(check1(a[tautj][tauti]))
 				{
 					for(tautk=0; tautk < a[tautj].length; tautk++)
 					{
 						if(tautk!=tauti)
-							ttemp.push(a[tautj][tautk]);
+						{
+							ttemp=ttemp.concat(a[tautj][tautk])
+						}
 						else
-							ttemp.push(tautx);
+						{
+							ttemp=ttemp.concat(tautx)
+						}
 					}
-					c = cox.push(ttemp);
+					cox.push(ttemp)
 				}
 				else if(checkx(a[tautj][tauti]))
 				{
 					for(tautk=0; tautk < a[tautj].length; tautk++)
 					{
 						if(tautk!=tauti)
-							ttemp.push(a[tautj][tautk]);
+						{
+							ttemp=ttemp.concat(a[tautj][tautk])
+						}
 						else
-							ttemp.push(tautx);
+						{
+							ttemp=ttemp.concat(tautx)
+						}
 					}
-					c = cox.push(ttemp);
-					c_ = cox.push(ttemp);
+					cox.push(ttemp)
+					cox.push(ttemp)
 				}
 				else
 				{
-					//      //print("ERROR IN PARSING" );
-					exit(1);
+							 //print("ERROR IN PARSING" )
+					exit(1)
 				}
 			}
-			if(c < c_)
+			if(cox.length < cox_.length)
 			{
-				//      //print("CALLING TO CHECK COFACTOR" );
+						 //print("CALLING TO CHECK COFACTOR" );
 				if(tautology(cox))
 				{
-					//        //print("CALLING TO CHECK COFACTOR" );
+								 //print("CALLING TO CHECK COFACTOR" );
 					if(tautology(cox_))
-						return true;
+						return true
 					else
-						return false;
+						return false
 				}
 				else
-					return false;
+					return false
 			}
 			else
 			{
-				//      //print("CALLING TO CHECK COFACTOR" );
+						 //print("CALLING TO CHECK COFACTOR" );
 				if(tautology(cox_))
 				{
-					//        //print("CALLING TO CHECK COFACTOR" );
+								 //print("CALLING TO CHECK COFACTOR" );
 					if(tautology(cox))
-						return true;
+						return true
 					else
-						return false;
+						return false
 				}
 				else
-					return false;
+					return false
 			}
 		}
 }
 
-	absorption = function(){
-		print("Entering absorption")
-		abscount=0;
-		print("Absorb cover of size " + cover.length);
-		absj=0;	
+	absorption = function(cover){
+		print("Message: Performing absorb over " + cover.length + " implicants.")
+		var abscount=0
+		var absj=0	
+		var absi=0	
 		for(absi=0; absi < cover.length-1; absi++)
 		{
 			absj = (absi+1)
@@ -375,12 +357,8 @@ import("io", true);
 			{
 					if(equal(cover[absi],cover[absj]))
 					{
-						//print(cover[absi])
-						//print(cover[absj])
-						//print(cover[absj+2])
+						//print("Erasing ")
 						cover.splice(absj,1)
-						//absj = (absj+1)
-						//print("Erasing " + cover.length + "  " + cover[absj])
 					}
 					else
 					{
@@ -389,144 +367,30 @@ import("io", true);
 							abscount = abscount +1
 							if(nofx(cover[absi]) < nofx(cover[absj]))
 							{
-								//print(cover[absi])
-								//print(cover[absj])
-								//print(cover[absj+2])
+								//print("Erasing <")
 								cover[absi] = cover[absj]
 								cover.splice(absj,1)
 								absj = (absi+1)
-								//print("yes nofx " + cover.length + "  " + cover[absj])
 							}
 							else
 							{
-								//print(cover[absi])
-								//print("absj-1 = " + cover[absj-1])
-								//print("absj   = " + cover[absj])
-								//print("absj+1 = " + cover[absj+1])
+								//print("Erasing >")
 								cover.splice(absj,1);
-								//absj = (absj+1)
-								//print("no nofx " + cover.length )
-								//print("absj-2 = " + cover[absj-2])
-								//print("absj-1 = " + cover[absj-1])
-								//print("absj   = " + cover[absj])
 							}
 							//print("Not erasing " + cover.length)
 						}
 						else
 						{
-							//print("no absorb " + absj)
 							absj = (absj+1)
-							//print("no absorb " + absj)
 						}
 					}
-				//}
-				//print("absi " + absi + " absj "+ absj + " cover.length " + cover.length)
 			}
 		}
-		print("abscount: " + abscount + " and final cover size: " + cover.length)
-}
-
-	rabsorb = function(a, index){ // a and index are unsighend ints
-	//print("Entering rabsorb")
-		rtemp = [];
-		tcube = cover[a];
-		tindex = 0;
-		rindex = index;
-		//  //print("ORIGINAL INDEX " + rindex);
-		for(rabi=0; rabi < cover.length; rabi++)
-		{
-			if(absorb(cover[a],cover[rabi]))
-			{
-				if(rabi > a )
-				{
-					//        //print("INDEX OF MIN" + tindex);
-					rtemp[tindex]=cover[rabi];
-					for(rabj=rabi+1; rabj < cover.length; rabj++)
-					{
-						rtemp.push(cover[rabj]);
-					}
-					cover = rtemp;
-					return 0;
-				}
-				else
-				{
-					for(rabj=rabi; rabj < cover.length; rabj++)
-					{
-						if(rabj!=a)
-							rtemp.push(cover[rabj]);
-					}
-					cover = rtemp;
-					return 0;
-				}
-			}
-			else
-			{
-		
-				rtemp.push(cover[rabi]);
-				if(rabi == a)
-					tindex=rtemp.length-1;
-			}
-		}
-		cover = rtemp;
-		//  //print("MODIFIED INDEX " + (rindex+1));
-		return (rindex+1);
+		//print("abscount: " + abscount + " and final cover size: " + cover.length)
 }
 
 
-	cabsorb = function(a, index) // called in main as i=casorb(temp,i), temp is temporary cube, cover[i] cube under analysis
-	{
-	//print("Entering cabsorb")
-	ctemp = [];
-	acount = 0;
-	tindex = 0;
-	for(cabi=0; cabi < cover.length; cabi++) //go through all implicants
-	{
-		if(equal(a,cover[cabi])) 
-		{
-			if(cabi < index)
-			{
-				for(cabj = cabi; cabj < cover.length; cabj++)
-				{
-					if(cabj!= index)
-						ctemp.push(cover[cabj]);
-				}
-				cover=ctemp;
-				return index;
-			}
-			if(cabi == index)
-			{
-				ctemp.push(cover[cabi]);
-				tindex = ctemp.length-1;
-			}
-			if(cabi> index)
-			{
-				for(cabj = index+1; cabj < cover.length; cabj++)
-				{
-					if(tindex > ctemp.length)
-						ctemp.push(cover[cabj]);
-					else
-						ctemp[tindex]=cover[cabj];
-					tindex++;
-				}
 
-				cover = ctemp;
-
-				return index;
-			}
-		}
-		else if(absorb(a,cover[cabi]))
-		{
-			if(cabi == index)
-				ctemp.push(a);
-			if(cabi < index) 
-				acount++;
-		}
-		else
-			ctemp.push(cover[cabi]);
-	}
-	cover = ctemp;
-	return (index-acount+1);
-}
 
 //////**************************** Main Program starts here *********************************/////////////
 
@@ -534,8 +398,6 @@ import("io", true);
 	ME_L=0;
 	l=0;
 	N=0;
-	id= MPI.Rank();
-	sys_size = MPI.Size();
 	total_comm = 0
 
 	// Check whether master-slave approach can be started
@@ -548,52 +410,38 @@ import("io", true);
 	/* First we will read the content of the file, only for node 0 */
 	if (id == 0) {
 
-		inputfile = new File("010.ls", "rb")
-		if ( !inputfile.IsOpen() )
-			throw "Could not open file";
-		//print("Reading file")
-		while(!inputfile.IsEof)
-		{
-			y = inputfile.Read().Chomp()
-			cover.push(y)
-		}
+		cover = File.Load("015.ls", "rb").split("\n")
 		//next we measure the time in node 0  
 		wtime = MPI.Wtime()
-
-		print("Before absorption " + cover.length)
-		absorption()
+		//if(cover[cover.length-1].length == 0)
+			//cover.splice(cover.length-1, 1)
+		print("Start Absorption")
+		absorption(cover)
 
 		isize = cover.length;
-		print("Initial cover size: " + isize)
+		print("Master: Initial cover size: " + isize)
 
 		while(true)
 		{
-			x = '-';
-
 			N = cover.length;
 			l = cover[0].length;
 
-			//print("Current cover size is:" + N)
-
+			print("Master: Current cover size is: " + N)
+			//print(cover)
 			//Indicate how big is the cover that we will be sending
 			for(ME_P = 1; ME_P < sys_size; ME_P++) {
 
 				//Indicate how big is the cover that we will be sending
-
-				MPI.Send(N, ME_P);
-
+				MPI.Send(N, ME_P,0);
 			}
-
 			//print("Master: Sending the number of implicants " + N + " to the nodes.");
 
-			//MPI.Bcast(&l, 1,  0);
 			
 			
 			MPI.Send(l) // Broadcast from 0 to all with tag 0 (passed in the function)
 
 			wtime_comm=MPI.Wtime()
 
-			//print("Broadcasting the cover of length "+ cover.length + "First 2 implicants " + cover[0] + "\t" + cover[1] + "last 2 implicant" + cover[cover.length-2] + "\t" + cover[cover.length-1])
 			//print("Broadcasting the cover")
 			//print("Cover length "+cover.length)
 			pieces = MPI.Pack_size(cover)
@@ -614,65 +462,58 @@ import("io", true);
 
 			for(iter=0; iter < cover.length;) //go over all implicants
 			{
-				////print("Master: We will analyze now implicant #" + i);
-				temp=cover[iter];
-				//for( j=0;j<cover[i].length;j++) //go over all chars of the chosen implicant, parallelizable
+				temp_cube=cover[iter];
 				//{
 				/*********************Here starts code that is being parallelized******************************/
 
-				j = 0; //initial bit being sent
+				j = 0 //initial bit being sent
 
 				for(ME_P = 1; ME_P < sys_size; ME_P++) 
 				{ //first initial set of bits to the processors
-					MPI.Send(j, ME_P); //send the bit we want to analyze
-					MPI.Send(iter, ME_P); //send the number of the implicant we are testing
-					j++;
-				};
+					MPI.Send(j, ME_P,0); //send the bit we want to analyze
+					MPI.Send(iter, ME_P,0); //send the number of the implicant we are testing
+					j++
+				}
 
-				processed_bits = 0;
+				 processed_bits = 0;
 				////print("Master: We will process " + cover[0].length + " bits in parallel." );
 
 				while(processed_bits < cover[0].length) { //receive bits and start assigning tasks again
 
-					//receive result of the test
-					////print("Master: Waiting to receive a processed bit." );
-					//MPI.Recv (&received_char, 1,  MPI.ANY_SOURCE, status);
 					received_char = MPI.Recv()
 
 					sender = MPI.Source(); /*This tells us which node has finished */
 					bit_number = MPI.Tag(); /*This specifies number of bit which was sent for processing*/
 
-					////print("Master: I received bit #" + bit_number + " from node #" + sender);
-
 					//Test if expansion was succesful and if yes, proceed
-					if(received_char == '-') 
-						temp[bit_number] = '-';
+					if(received_char == "-")
+					{
+						tc=""
+						tc=temp_cube.split("")
+						tc[bit_number]="-"
+						temp_cube=""
+						for(i=0;i<tc.length;i++)
+							temp_cube=temp_cube.concat(tc[i])
+					}
 					
-					processed_bits++;
+					processed_bits++
 
 					if(j < cover[0].length) { //send again a new task to processor that finished
-						MPI.Send(j, sender);
-						MPI.Send(iter, sender);
-						j++;                        
-					};
+						MPI.Send(j, sender,0)
+						MPI.Send(iter, sender,0)
+						j++                        
+					}
 
 					////print("Master: For the " + cover[0].length + " bits, " + processed_bits + " bits has been already processed." );
-					if(processed_bits==cover[0].length) // ???? Is this really necessary 
-						break;
+					if(processed_bits == cover[0].length) // ???? Is this really necessary 
+						break
 				}
-
 
 				/*******************Here ends the code which it is being parallelized*************************/
 
-				//}
 				//for of going all chars of chosen implicant, parallelizable
-
-				if(!equal(temp,cover[iter])) //if expansion was not succesful (out of the loop can be parallelized)
-				{
-					iter = cabsorb(temp,iter);
-				}
-				else //if expansion was succesful, go to next implicant
-					iter++;
+				cover[iter] = temp_cube
+				iter++;
 			} //for
 
 			//send order to finalize since all the cover was processed
@@ -680,89 +521,22 @@ import("io", true);
 			for(ME_P = 1; ME_P < sys_size; ME_P++) //first initial set of bits to the processors
 			{
 				MPI.Send(j, ME_P, 1); //1 is a flag to finalize
-				j++;
+				j++
 			}
-
-			////print("Master: Order to finalize and proceed with next implicant sent to nodes." );
-
-			//wtime_expansion = MPI.Wtime() - wtime_expansion;
-			//wtime_expansion_total += wtime_expansion;
-
-			//wtime_reduction = MPI.Wtime();
-			//  //print("REDUCTION" );
-			for(mai=0; mai < cover.length; mai++)
-			{
-				for( maj=0 ; maj < cover[mai].length;)
-				{
-					temp=cover[mai];
-					reduce = false;
-					if(checkx(cover[mai][maj]))
-					{
-						//assign0(cover[mai][maj]);
-						cover[mai][maj] = '0';
-						//assign1(temp[maj] = '1';
-						temp[maj] = '1';
-						for( mak = 0; mak < cover.length; mak++)
-						{
-							if(absorb(temp,cover[mak])) //call to absorb
-							{
-								reduce = true;
-								break;
-							}
-						}
-						if(reduce)
-						{
-							// //print("REDUCE ZERO ALLOWED!!!" + maj);
-							maj=rabsorb(mai,maj);
-							// //print("NEXT INDEX " + maj);
-						}
-						else
-						{
-							// //print("REDUCE ZERO NOT ALLOWED" + maj);
-							//assign1(cover[mai][maj]);
-							cover[mai][maj] = '1';
-							//assign0(temp[maj]);
-							temp[maj] = '0';
-							for( k=0; k < cover.length; k++)
-							{
-								if(absorb(temp,cover[k])) //call to absorb
-								{
-									reduce = true;
-									break;
-								}
-							}
-							if(reduce)
-							{
-								// //print("REDUCE ONE ALLOWED!!!" + maj);
-								maj=rabsorb(mai,maj); //call to rasorb
-							}
-							else
-							{
-								// //print("REDUCE ONE NOT ALLOWED" );
-								//assignx(cover[mai][maj]);
-								cover[mai][maj] = '-';
-								maj++;
-							}
-						}
-					}
-					else
-					{
-						maj++;
-						//  //print("NO X" );
-					}
-				} // for
-			} // for
+			print("Start Re Absorption at ")
+			print(cover)
+			absorption(cover)
 
 			//wtime_reduction = MPI.Wtime()-wtime_reduction;
 			//wtime_reduction_total += wtime_reduction;
 
 			if(isize <= cover.length)
 			{
-				break;
+				break
 			}
 			else
 			{
-				isize = cover.length;
+				isize = cover.length
 			}
 
 		} // while
@@ -775,13 +549,9 @@ import("io", true);
 		}
 
 		wtime = MPI.Wtime()-wtime;
-		//for( i=0; i < cover.length;i++)
-		//{
-			//print(cover[i]);
-		//}
-
-
-		print("Final cover size is: " + cover.length)
+		//print("Master: Final cover is:")
+		print("Master: Final cover size is: " + cover.length)
+		print(cover)
 		print("Wall clock elapsed seconds = " + wtime)
 		print("Total time spent in transmitting the cover was = " + total_comm)
 
@@ -789,16 +559,19 @@ import("io", true);
 
 	} //end for if for id==0
 	else { //do this if id is not 0
-		step=0;
-		x = '-'
+		var si = 0
+		var sj = 0
+		var temp_cube3 = ["0","1"]
+		var nx = "-"
+		var lcover = []
 		while(1) { //keep waiting for the master to be sending tasks to them
 			////print("Node #" + id + ": Starting external loop." );
 
 			N = MPI.Recv(0)
-
+			//print(id +"  "+ N + "  " + MPI.Tag())
 			if(MPI.Tag() == 1) {
-				////print("Node #" + id + ": Received order to break external loop." );
-				break; //if we receive a status equal to 1 means that 
+				print("Node #" + id + ": Received order to break external loop." );
+				break //if we receive a status equal to 1 means that 
 			}
 
 			l = MPI.Send(l) // Broadcast from root=0 and tag=0;
@@ -811,79 +584,89 @@ import("io", true);
 			pie = MPI.Send(pieces)
 			//print("Rx "+pie)
 			localcover = []
-			cover = []
 			//print("**************************" + pie);
 			for(i = 0; i <= pie; i++)
 			{
-				tempr = MPI.Send(cover)
+				tempr = MPI.Send(lcover)
 				localcover = localcover.concat(tempr)
 			}
-			//localcover = localcover.concat(MPI.Send(temp))
-			//print("Recieved cover length "+localcover.length)
-
-			//localcover = new Array(lcover)
-			//print("Recieved Cover of size " + localcover.length + " first element " + localcover[0] + " last element " + localcover[localcover.length-1])
-
-			localcover.splice(N-1, localcover.length-N) // localcover is now of size N
-			//print("After splicing " + localcover.length + " first element " + localcover[0] + " last element " + localcover[localcover.length-1])
+			//print("Recieved cover is "+ localcover)
 
 			/**********************Here starts code that has been migrated to the nodes***************/
 			while(1) { //waiting for receiving from master order to analyze some bit of some implicant
 				////print("Node #" + id + ": Starting internal loop." );
 
-				j = MPI.Recv(0);
+				j = MPI.Recv(0)
 				////print("Node #" + id + ": Received order to analyze the " + j + "-th bit" );
 
 				////print("Node #" + id + ": Received a status tag of: " + MPI.Tag());
-
+				//print(id +"  "+ j + "  " + MPI.Tag())
 				if(MPI.Tag() == 1) {
 
 					////print("Node #" + id + ": Received the order to break internal loop." );
 
-					break; //if it has order of finalize do so
+					break //if it has order of finalize do so
 				}
 				i = MPI.Recv(0)
-				//print("Node #" + id + ": will work over the " + i + "-th implicant" )
+				//print("Node #" + id + ": will work over the " + i + "-th implicant and bit #" + j  )
 
-				temp = localcover[i] //pick implicant for analysis
-
-				//char store;
-				if(!checkx(temp[j])) //try to raise char from 1 or 0 to DC
+				temp_cube3 = localcover[i] //pick implicant for analysis
+				//temp_cube3 = ["0"] //pick implicant for analysis
+				//print("Typeof " + typeof(localcover))
+				//print("id #" + id+" checkx "+checkx(temp_cube3[j]) + " temp_cube3["+j+"]" + temp_cube3[j] )
+				if(!checkx(temp_cube3[j])) //try to raise char from 1 or 0 to DC
 				{
-					store = temp[j]
-					temp[j]='-'
+					store = temp_cube3[j]
+					//print(temp_cube3[j])
+					//temp_cube3[j]="-"
+					x=""
+					x=temp_cube3.split("")
+					x[j]="-"
+					temp_cube3=""
+					for(i=0;i<x.length;i++)
+						temp_cube3=temp_cube3.concat(x[i])
 					//vector<cube> cofac;
-					cofac = []
-
+					var cofac = []
+					var k = 0 
 					for( k=0; k < localcover.length; k++) //go over all remaining implicants
 					{
-						if(equalx(localcover[k],temp))
+						//print("id #" + id + " equalx " +equalx(localcover[k],temp_cube3)  + " localcover["+k+"] "+localcover[k]+ " temp_cube3 "+ temp_cube3)
+						if(equalx(localcover[k],temp_cube3))
 						{
-							cocube = []
+							var cocube = ""
+							var ll = 0
 							for( ll=0; ll < localcover[k].length;ll++)
 							{
-								if(checkx(temp[ll]))
+								//print("id #" + id + " checkx "+checkx(temp_cube3[ll]) + " temp_cube3["+ll+"] " + temp_cube3[ll])
+								if(checkx(temp_cube3[ll]))
 								{
-									cocube.push(localcover[k][ll])
+									//cocube.push(localcover[k][ll])
+									cocube=cocube.concat(localcover[k][ll])
 								}
 								else
 								{
-									nx = '-'
-									cocube.push(nx)
+									//cocube.push(nx)
+									cocube=cocube.concat("-")
 								}
 							}
-							cofac.push(cocube) //create the cofactor based on the expanded implicant
+							cofac.push(cocube.toString()) //create the cofactor based on the expanded implicant
 						}
 					} // end of the for that goes through all implicants
 					//print("Here" + cofac.length)
 					if(!tautology(cofac)) //check tautology over the cofactor, if not true reject expansion
 					{
-						temp[j] = store //restore temp to initial value if not ok expansion
+						//temp_cube3[j] = store //restore temp to initial value if not ok expansion
+						x = ""
+						x = temp_cube3.split("")
+						x[j] = store
+						temp_cube3 = ""
+						for(i=0;i<x.length;i++)
+							temp_cube3=temp_cube3.concat(x[i])
 					}
 				}  //if of trying to raise 0 or 1 to DC
 
-				print("done with tautology " + temp[j])
-				MPI.Send(temp[j], 0, j) //send the value of the bit and set tag to j-th
+				//print("done with tautology " + temp_cube3[j])
+				MPI.Send(temp_cube3[j], 0, j) //send the value of the bit and set tag to j-th
 			}
 			/************Here ends the code which has been migrated to the nodes***********/
 
