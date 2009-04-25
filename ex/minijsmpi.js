@@ -306,7 +306,7 @@ import("io", true);
 						}
 					}
 					cox.push(ttemp)
-					cox.push(ttemp)
+					cox_.push(ttemp)
 				}
 				else
 				{
@@ -347,6 +347,7 @@ import("io", true);
 
 	absorption = function(cover){
 		print("Message: Performing absorb over " + cover.length + " implicants.")
+		cover.sort();
 		var abscount=0
 		var absj=0	
 		var absi=0	
@@ -389,27 +390,108 @@ import("io", true);
 		//print("abscount: " + abscount + " and final cover size: " + cover.length)
 }
 
+absorption3 = function(a3a, a3b)
+{
+
+	//cout<<"Masked absorption."<<endl;
+	//sort(a.begin(),a.end());
+	var a3count = 0;
+	var a3i = 0
+	var ib = 0
+	var a3j = 0
+	var jb = 0
+	//cout<<"Message: Performing absorb over "<<a.size()<<" implicants."<<endl;
+	//cout<<"Message: Implicants were:"<<endl;
+	for(a3i=0; a3i < (a3a.length-1); a3i++)
+	{
+		jb=ib+1
+		for(a3j=a3i+1; a3j < (a3a.length-1);)
+		{
+
+			if(equal(a3a[a3i],a3a[a3j]))
+			{
+				//cout<<"Erasing "<<endl;
+				//print(*i);
+				//print(*j);
+				a3b.splice(jb, 1)
+				a3a.splice(j, 1)
+			}
+			else
+			{
+				if(absorb(a3a[i],a3a[j]))
+				{   a3count++;
+					if(nofx(a3a[i]) < nofx(a3a[j]))
+					{
+						a3a[a3i] = a3a[a3j]
+						a3b[ib] = a3b[jb]
+						a3b.splice(jb,1)
+						a3a.splice(a3j,1)
+						a3j = a3i+1
+						jb=ib+1
+					}
+					else {
+						a3b.splice(jb,1)
+						a3a.splice(a3j,1)
+					}
+				}
+				else {
+					a3j++;
+					jb++;
+				}
+			}
+		}
+		ib++;
+	}
+	//cout<<"Message: Absorption completed and new cover size is:"<<a.size()<<endl;
+}
+
+absorption2 = function(a2a, a2b) {
+	var i, j, k, step
+	var x
+	i=0
+	while(i < a2b.length) {
+		step=0;
+		for(j=0;j<a2b[0].length;j++) 
+		{
+			if(a2b[i][j]!=a2a[i][j]) 
+			{
+				if(step==0)
+				{ 
+					step=1
+					//cout<<"Detected - when i="<<i<<" and j="<<j<<endl;
+					//a2a[i][j]='-'
+					x=a2a[i].split("")
+					x[j]="-"
+					x=x.join("")
+					a2a.splice(i,1,x)
+				}
+				if((i % 100)==0) absorption3(a2a,a2b)
+			}
+		}
+		i++
+	}
+	absorption(a2a)
+}
 
 
-
-//////**************************** Main Program starts here *********************************/////////////
+/////**************************** Main Program starts here *********************************/////////////
 
 	ME_P=0;
 	ME_L=0;
 	l=0;
 	N=0;
 	total_comm = 0
+	x='-'
 
 	// Check whether master-slave approach can be started
 	if (sys_size < 2) 
 	{
-		//print("At least two processors are required to start master-slave processing.");
-		return 1;
+		throw("At least two processors are required to start master-slave processing.");
 	}
 
 	/* First we will read the content of the file, only for node 0 */
-	if (id == 0) {
-
+	if (id == 0) 
+	{
 		cover = File.Load("015.ls", "rb").split("\n")
 		//next we measure the time in node 0  
 		wtime = MPI.Wtime()
@@ -418,260 +500,235 @@ import("io", true);
 		print("Start Absorption")
 		absorption(cover)
 
-		isize = cover.length;
+		isize = cover.length
+		L = cover[0].length
 		print("Master: Initial cover size: " + isize)
+	}
 
-		while(true)
-		{
-			N = cover.length;
-			l = cover[0].length;
+	while(true) //Nodes operate until cover can not further reduce
+	{
 
-			print("Master: Current cover size is: " + N)
-			//print(cover)
-			//Indicate how big is the cover that we will be sending
-			for(ME_P = 1; ME_P < sys_size; ME_P++) {
+		rows = 0
+		cols = 0
 
-				//Indicate how big is the cover that we will be sending
-				MPI.Send(N, ME_P,0);
-			}
-			//print("Master: Sending the number of implicants " + N + " to the nodes.");
+		if(id==0) {  //Master keeps track of horizontal stripe under analysis
+			isize=cover.size()
 
-			
-			
-			MPI.Send(l) // Broadcast from 0 to all with tag 0 (passed in the function)
+			//Calculate N and L
 
-			wtime_comm=MPI.Wtime()
-
-			//print("Broadcasting the cover")
-			//print("Cover length "+cover.length)
-			pieces = MPI.Pack_size(cover)
-			//print("Pack size required for full data " + pieces)
-			pieces = (pieces/4096)
-			//print("Root made "+pieces)
-			MPI.Send(pieces)
-			//print("# of pieces " + pieces)
-			for(i = 0; i < pieces; i++)
-			{
-				temps = cover.slice(i*157, (i+1)*157)
-				//print("Pack size required for sliced data" + MPI.Pack_size(temps))
-				MPI.Send(temps)
-			}
-			//print("Broadcast complete")
-
-			total_comm+=MPI.Wtime()-wtime_comm;
-
-			for(iter=0; iter < cover.length;) //go over all implicants
-			{
-				temp_cube=cover[iter];
-				//{
-				/*********************Here starts code that is being parallelized******************************/
-
-				j = 0 //initial bit being sent
-
-				for(ME_P = 1; ME_P < sys_size; ME_P++) 
-				{ //first initial set of bits to the processors
-					MPI.Send(j, ME_P,0); //send the bit we want to analyze
-					MPI.Send(iter, ME_P,0); //send the number of the implicant we are testing
-					j++
-				}
-
-				 processed_bits = 0;
-				////print("Master: We will process " + cover[0].length + " bits in parallel." );
-
-				while(processed_bits < cover[0].length) { //receive bits and start assigning tasks again
-
-					received_char = MPI.Recv()
-
-					sender = MPI.Source(); /*This tells us which node has finished */
-					bit_number = MPI.Tag(); /*This specifies number of bit which was sent for processing*/
-
-					//Test if expansion was succesful and if yes, proceed
-					if(received_char == "-")
-					{
-						tc=""
-						tc=temp_cube.split("")
-						tc[bit_number]="-"
-						temp_cube=""
-						for(i=0;i<tc.length;i++)
-							temp_cube=temp_cube.concat(tc[i])
-					}
-					
-					processed_bits++
-
-					if(j < cover[0].length) { //send again a new task to processor that finished
-						MPI.Send(j, sender,0)
-						MPI.Send(iter, sender,0)
-						j++                        
-					}
-
-					////print("Master: For the " + cover[0].length + " bits, " + processed_bits + " bits has been already processed." );
-					if(processed_bits == cover[0].length) // ???? Is this really necessary 
-						break
-				}
-
-				/*******************Here ends the code which it is being parallelized*************************/
-
-				//for of going all chars of chosen implicant, parallelizable
-				cover[iter] = temp_cube
-				iter++;
-			} //for
-
-			//send order to finalize since all the cover was processed
-
-			for(ME_P = 1; ME_P < sys_size; ME_P++) //first initial set of bits to the processors
-			{
-				MPI.Send(j, ME_P, 1); //1 is a flag to finalize
-				j++
-			}
-			print("Start Re Absorption at ")
-			print(cover)
-			absorption(cover)
-
-			//wtime_reduction = MPI.Wtime()-wtime_reduction;
-			//wtime_reduction_total += wtime_reduction;
-
-			if(isize <= cover.length)
-			{
-				break
-			}
-			else
-			{
-				isize = cover.length
-			}
-
-		} // while
-
-
-		for(ME_P=1; ME_P < sys_size; ME_P++) { //send end for outer loop in slave nodes
-
-			//Indicate how big is the cover that we will be sending
-			MPI.Send(N, ME_P, 1);
+			N = cover.size()
+			cout<<"Node0: Current cover size is N="<<N<<endl
+			//print(cover[i]);
 		}
 
-		wtime = MPI.Wtime()-wtime;
-		//print("Master: Final cover is:")
-		print("Master: Final cover size is: " + cover.length)
-		print(cover)
-		print("Wall clock elapsed seconds = " + wtime)
-		print("Total time spent in transmitting the cover was = " + total_comm)
+		N = MPI.Bcast(0, N)
+		//if (id==0) print("Broadcast: N=" + N + " to all nodes.")
+
+		L = MPI.Bcast(0, L);
+		//if (id==0) print("Broadcast: L=" + L + " to all nodes.")
+
+		cur_horiz_stripe = MPI.Bcast(0, cur_horiz_stripe)
+		//if (id==0) print("Broadcast: cur_horiz_stripe=" + cur_horiz_stripe + " to all nodes.")
+
+		horiz_stripe_size = p
+
+		rows = N/horiz_stripe_size
+		cols = L/p
+		extra_rows = N % horiz_stripe_size
+		extra_cols = L % p
+
+		if(cur_horiz_stripe == (N/horiz_stripe_size-1)) 
+			rows += extra_rows //if we are last stripe, take remaining rows
+
+		if(id < extra_cols) 
+			cols += 1 //split remainder columns among processes
+
+		if (step==0) 
+		{ 
+			step=1 //allocate buffer only one time
+
+			//buffer = (char*) malloc(N*L*sizeof(char));
+
+			//absorb_cover=vector< vector<char> > (N, vector<char>(L,0));
+			absorb_cover = []
 
 
+		} else {
+			absorb_cover.splice(N, absorb_cover.length-N)
+		}
 
-	} //end for if for id==0
-	else { //do this if id is not 0
-		var si = 0
-		var sj = 0
-		var temp_cube3 = ["0","1"]
-		var nx = "-"
-		var lcover = []
-		while(1) { //keep waiting for the master to be sending tasks to them
-			////print("Node #" + id + ": Starting external loop." );
+		absorb_cover = MPI.Bcast(0, cover)
+		if(id == 0)
+			absorb_cover = cover
 
-			N = MPI.Recv(0)
-			//print(id +"  "+ N + "  " + MPI.Tag())
-			if(MPI.Tag() == 1) {
-				print("Node #" + id + ": Received order to break external loop." );
-				break //if we receive a status equal to 1 means that 
-			}
+		absorb_cover.splice(N, absorb_cover.length-N)
+		//if (id==0) cout<<"Broadcast: cover to all nodes."<<endl;
 
-			l = MPI.Send(l) // Broadcast from root=0 and tag=0;
+		//Nodes need to unpack the buffer
 
-			//print("Node #" + id + ": Received a cover size of " + N)
-			//print("Node #" + id + ": Received an implicant size of " + l)
+		//for(i=0;i<N;i=i+1) {
 
-			//print("Recieving Broadcasted cover")
-			pieces = 0.0
-			pie = MPI.Send(pieces)
-			//print("Rx "+pie)
-			localcover = []
-			//print("**************************" + pie);
-			for(i = 0; i <= pie; i++)
-			{
-				tempr = MPI.Send(lcover)
-				localcover = localcover.concat(tempr)
-			}
-			//print("Recieved cover is "+ localcover)
+			//tempo=&absorb_cover[i][0];
+			//memcpy(tempo,&buffer[i*L],L*sizeof(char));
+			////cout<<"Receiving: ";print(tempo,l);
+		//};
 
-			/**********************Here starts code that has been migrated to the nodes***************/
-			while(1) { //waiting for receiving from master order to analyze some bit of some implicant
-				////print("Node #" + id + ": Starting internal loop." );
+		//cout<<"Node"<<id<<": My buffer is "; print(buffer,N*L); cout<<endl;
+		//cout<<"Node"<<id<<": My cover has Nlocal="<<cover.size()<<" and Llocal="<<cover[0].size()<<endl;
 
-				j = MPI.Recv(0)
-				////print("Node #" + id + ": Received order to analyze the " + j + "-th bit" );
+		//Each node operates over bits in current horizontal stripe and it is corresponding vertical stripe
+		//cout<<"Node"<<id<<": Starting operation on block."<<endl;
+		//cout<<"Node"<<id<<": The local cover has Nlocal="<<cover.size()<<endl;
+		//cout<<"Node"<<id<<": I am responsible of cols="<<cols<<endl;
 
-				////print("Node #" + id + ": Received a status tag of: " + MPI.Tag());
-				//print(id +"  "+ j + "  " + MPI.Tag())
-				if(MPI.Tag() == 1) {
+		//for(i=0;i<cover.size();i++) {print(cover[i]);};
+		//cout<<"Node"<<id<<": cur_horiz_stripe="<<cur_horiz_stripe<<endl;
+		//cout<<"Node"<<id<<": ilow="<<cur_horiz_stripe*N/horiz_stripe_size<<endl;
+		//cout<<"Node"<<id<<": ihigh="<<(cur_horiz_stripe*N/horiz_stripe_size+rows)<<endl;
+		//cout<<"Node"<<id<<": N="<<N<<endl;
+		//cout<<"Node"<<id<<": horiz_stripe_size="<<horiz_stripe_size<<endl;
+		//cout<<"Node"<<id<<": rows="<<rows<<endl;                
 
-					////print("Node #" + id + ": Received the order to break internal loop." );
+		for(i=0;i<absorb_cover.length;i++) {
 
-					break //if it has order of finalize do so
-				}
-				i = MPI.Recv(0)
-				//print("Node #" + id + ": will work over the " + i + "-th implicant and bit #" + j  )
+			temp_cube = absorb_cover[i] //pick implicant for analysis
+			//cout<<"Assigning new i="<<i<<endl;
+			if(id >= extra_cols) 
+				jlow = ((L/p)+1)*extra_cols + (L/p)*(id-extra_cols)
+			else 
+				jlow = ((L/p)+1)*id
+			//cout<<"Node"<<id<<": has jlow="<<jlow<<" and jhigh="<<jlow+cols-1<<endl;
 
-				temp_cube3 = localcover[i] //pick implicant for analysis
-				//temp_cube3 = ["0"] //pick implicant for analysis
-				//print("Typeof " + typeof(localcover))
-				//print("id #" + id+" checkx "+checkx(temp_cube3[j]) + " temp_cube3["+j+"]" + temp_cube3[j] )
-				if(!checkx(temp_cube3[j])) //try to raise char from 1 or 0 to DC
+			for(j=jlow; j<(jlow+cols); j++) {
+				store = temp_cube[j]
+				//cout<<"Assigning new j="<<j<<endl;   
+				if(!checkx(temp_cube[j])) //try to raise char from 1 or 0 to DC
 				{
-					store = temp_cube3[j]
-					//print(temp_cube3[j])
-					//temp_cube3[j]="-"
-					x=""
-					x=temp_cube3.split("")
-					x[j]="-"
-					temp_cube3=""
-					for(i=0;i<x.length;i++)
-						temp_cube3=temp_cube3.concat(x[i])
-					//vector<cube> cofac;
-					var cofac = []
-					var k = 0 
-					for( k=0; k < localcover.length; k++) //go over all remaining implicants
+					var x
+					x = temp_cube.split("")
+					x[j]='-';
+					temp_cube = x.join("")
+					cofac = [];
+
+					for(k=0; k<absorb_cover.length; k++) //go over all remaining implicants
 					{
-						//print("id #" + id + " equalx " +equalx(localcover[k],temp_cube3)  + " localcover["+k+"] "+localcover[k]+ " temp_cube3 "+ temp_cube3)
-						if(equalx(localcover[k],temp_cube3))
+						if(equalx(absorb_cover[k],temp_cube))
 						{
-							var cocube = ""
-							var ll = 0
-							for( ll=0; ll < localcover[k].length;ll++)
+							cocube = "";
+							for(l=0; l<absorb_cover[k].length; l++)
 							{
-								//print("id #" + id + " checkx "+checkx(temp_cube3[ll]) + " temp_cube3["+ll+"] " + temp_cube3[ll])
-								if(checkx(temp_cube3[ll]))
+								if(checkx(temp_cube[l]))
 								{
-									//cocube.push(localcover[k][ll])
-									cocube=cocube.concat(localcover[k][ll])
+									cocube=cocube.concat(absorb_cover[k][l]);
 								}
 								else
 								{
-									//cocube.push(nx)
-									cocube=cocube.concat("-")
+									cocube=cocube.concat(x);
 								}
 							}
-							cofac.push(cocube.toString()) //create the cofactor based on the expanded implicant
+							cofac.push_back(cocube); //create the cofactor based on the expanded implicant
 						}
 					} // end of the for that goes through all implicants
-					//print("Here" + cofac.length)
+
 					if(!tautology(cofac)) //check tautology over the cofactor, if not true reject expansion
 					{
-						//temp_cube3[j] = store //restore temp to initial value if not ok expansion
-						x = ""
-						x = temp_cube3.split("")
-						x[j] = store
-						temp_cube3 = ""
-						for(i=0;i<x.length;i++)
-							temp_cube3=temp_cube3.concat(x[i])
+						//cout<<"Restoring when i="<<i<<" and j="<<j<<endl;
+						var z = temp_cube.split("")
+						z[j]=store
+						temp_cube = z.join() //restore temp to initial value if not ok expansion
+					} else {
+						//cout<<"Node "<<id<<": Succesful expansion at i="<<i<<" and j="<<j<<endl;
 					}
 				}  //if of trying to raise 0 or 1 to DC
 
-				//print("done with tautology " + temp_cube3[j])
-				MPI.Send(temp_cube3[j], 0, j) //send the value of the bit and set tag to j-th
+			} // end for j
+			absorb_cover(i,1,temp_cube); //replace cover with the final expanded word
+		} // end for i
+
+
+		//cout<<"Node"<<id<<": Local absorb cover after expansion with cur_horiz_stripe="<<cur_horiz_stripe<<endl;
+		//for(i=0;i<absorb_cover.size();i++) print(absorb_cover[i]);
+		//cout.flush();
+
+
+/****************************************************************************************/
+		//Here we need to add the reduction to node 0
+		for(i=0;i<N;i=i+1) { //everybody packs it in the buffer
+			tempo = &absorb_cover[i][0];
+			memcpy(&buffer[i*L],&absorb_cover[i][0],L*sizeof(char));
+			//cout<<"Sending implicant #"<<i<<":";print(buffer,L);
+		};
+
+		if(id==0) { //in node 0 we allocate the receiving buffer
+			reduce_buffer=(char*) malloc(N*L*sizeof(char));
+		};
+
+		//cout<<"Node"<<id<<": Preparing for Reduce."<<endl;
+
+		MPI::COMM_WORLD.Reduce(buffer, reduce_buffer, N*L, MPI::CHAR, op, 0);
+
+		//cout<<"Node"<<id<<": Reduced successful."<<endl;
+		if(id==0) { //in node 0 we unpack the buffer
+			for(i=0;i<N;i=i+1) {
+
+				tempo=&absorb_cover[i][0];
+				memcpy(tempo,&reduce_buffer[i*L],L*sizeof(char));
+				//cout<<"Receiving: ";print(tempo,l);
+			};
+		}
+/***************************************************************************************/
+		if(id==0) { //node 0 performs absorption
+			cur_horiz_stripe++ //increment current pass
+		}
+
+		/***********This part is for absorption or reduction**********/
+		if (id==0) { //node 0 performs a last absorption
+			//cout<<"Node0: Absorb cover before absorption:"<<endl;
+			//for(i=0;i<absorb_cover.size();i++) print(absorb_cover[i]);
+			absorption2(cover, absorb_cover)
+
+		}
+		/***********End of absorption or reduction part***************/
+
+		/****************Now test if the cover size reduced, if not iterate again*********/
+		flag='c'
+
+		if (id==0) {
+			print("Node0: Previous cover size was " + isize + " and new size is " + cover.length)
+			if(isize <= cover.length) //if cover size did not reduce then break the loop
+			{
+				flag='t'
 			}
-			/************Here ends the code which has been migrated to the nodes***********/
+			else
+			{
+				flag='c'
+				isize = cover.length
+			}
 
-		} //end for while(1), slave waiting for master to send him/her a task
-		//free(buffer);
-	} //end of else for id==0
+		}
 
-	//MPI.Finalize();
+		//Synchronize termination flag
+
+		flag = MPI::COMM_WORLD.Bcast(0, flag)
+		if (id==0) 
+			print("Broadcast: Iterating flag=" + flag + " sent to all nodes.")
+		if(flag=='t') 
+			break
+
+		/****************End of condition testing*****************************************/
+	} //end for while, all nodes continue until cover can not be further reduced
+
+	if (id==0) {
+		wtime = MPI_Wtime()-wtime;
+		print("=================================")
+		print("Node0: Final cover is:")
+		for(unsigned int i=0;i<cover.size();i++)
+		{   
+			print(cover[i]); 
+		}
+		print("Node0: Final cover size is: "+ cover.length)
+		print(< "Wall clock elapsed seconds = " + wtime)
+		//print( "Total time spent in transmitting the cover was = " + total_comm)
+	}
+}
+

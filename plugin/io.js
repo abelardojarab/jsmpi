@@ -351,22 +351,39 @@ with (io)
             if ( first )
                 first = false;
             else
-						{
                 printf(" ");
-						}
         
             String::Utf8Value str( args[i] );
             fputs( *str, stdout );
         }
         fputc( '\n', stdout );
-        fflush( stdout );
         
         return Undefined();
     %>;
 
     Functions.printf = <%
-        return jsFprintf( stdout, args );
+        Handle<Value> result = jsFprintf( stdout, args );
+        return result;
     %>;
+
+    Functions.debug = <%
+        bool first = true;
+        for (int i = 0; i < args.Length(); i++)
+        {
+            HandleScope handle_scope;
+
+            if ( first )
+                first = false;
+            else
+                printf(" ");
+        
+            String::Utf8Value str( args[i] );
+            fputs( *str, stdout );
+        }
+        fputc( '\n', stdout );
+        
+        return Undefined();
+    %>
 
     // *FILE HANDLING*
     Classes.File = new io.Class( "File", 2 );

@@ -27,6 +27,9 @@ using namespace v8;
 extern "C" Handle<Value> LoadJSFunctions( Handle<Object>obj );
 extern "C" Handle<Value> UnloadJSFunctions( Handle<Object>obj );
 
+extern int global_argc;
+extern char **global_argv;
+
 // Javascript API
 Handle<Value> jsPlugin( const Arguments& args );
 Handle<Value> jsInclude( const Arguments& args );
@@ -624,6 +627,10 @@ Handle<Value> generatePlugin( const Arguments& args, char **filename, int srcTyp
 
     if ( OUTPUT_FILENAME )
         printf( "%s\n", *filename );
+
+    for (int i=0; i<global_argc; i++)
+        if (!strcmp(global_argv[i], "-dumpfile"))
+            printf("%s\n", *filename);
 
     // Update line count to keep track of lines
     Handle<Object> CodeData = Object::New();
