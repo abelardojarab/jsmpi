@@ -1,35 +1,23 @@
-import( "MPI" );
-import( "io", true );
-
-Me = MPI.Rank();
-Threads = MPI.Size();
-funct = function(a){ return a+1} 
-sarr = [];
-for(i=0; i<10;i++)
+import("MPI")
+import("io",true)
+//y = "Damn it"
+id = MPI.Rank()
+si = MPI.Size()
+y=0
+if(id == 0)
 {
-	//print("sarr["+i+"]="+i);
-	sarr[i] = "Hello "+i;
+	y=File.Load("015.ls","rb").split("\n")
+	y.splice((y.length-1),1)
+	print(typeof(y))
+	print("length " +y.length)
 }
-if ( Me != 0 )
-{
-
-    //for ( i=1; i<Threads; i++ )
-    //{
-				Hello = MPI.Recv();
-				print( "Recieved Successfully " + Me );
-				//print("The tag is " + MPI.Tag());
-				//print("The source is " + MPI.Source());
-    //}
-		print(Hello(4));
-
-}
-else
-{
-    for ( i=1; i<Threads; i++ )
-    {
-			t1=MPI.Wtime();
-			MPI.Send( funct, i, Me );
-			t2=MPI.Wtime();
-			print("Sent successfully to " + i + " in " + (t2-t1) + "S:ecs");
-    }
-}
+	//MPI.Bcast(0,y)
+	//for(i=1; i<si; i++)
+		//MPI.Send(y,i)
+//}else
+//{
+	y=MPI.Bcast(0,y)
+	//x=MPI.Recv(0)
+	if(id != 0)
+	print("id = " + id +" data is = " + y )
+//}

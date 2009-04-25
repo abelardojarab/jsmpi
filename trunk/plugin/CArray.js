@@ -22,7 +22,6 @@ with( CArray )
         } carray_double;
     %>
 
-
     Classes.Integer = new Class( "Integer", 2 )
     with( Classes.Integer )
     {
@@ -30,16 +29,22 @@ with( CArray )
         Constructor = <%
             // Check for valid array size
             if ( args.Length() < 1 )
-                return ThrowException( String::New( "Expected integer for argument 1" ) );
+                return ThrowException( String::New( "Expected array size" ) );
             else if ( !args[0]->IsInt32() )
-                return ThrowException( String::New( "Expected integer for argument 1" ) );
-            else if ( args[0]->IntegerValue() < 1 )
+                return ThrowException( String::New( "Array size must be integer" ) );
+            else if ( args[0]->Int32Value() < 1 )
                 return ThrowException( String::New( "Invalid array size" ) );
-            
+
             // Create array
             carray_int *new_array = new carray_int;
             new_array->size = args[0]->IntegerValue();
-            new_array->array = new int[ new_array->size ];
+            if (new_array->size > 0)
+                new_array->array = new int[ new_array->size ];
+            else
+            {
+                new_array->array = 0;
+                new_array->size = -1;
+            }
 
             // Set internal fields
             args.This()->SetInternalField( 0, Integer::New( TYPE_INTEGER ) );
@@ -74,6 +79,11 @@ with( CArray )
             // Get array field
             return Integer::New( array->array[index] );
         %>
+
+        Getters.length = <%
+            carray_int *array = (carray_int *)Local<External>::Cast( info.This()->GetInternalField( 1 ) )->Value();
+            return Integer::New( array->size );
+        %>
     }
 
     Classes.Double = new Class( "Double", 2 )
@@ -83,10 +93,10 @@ with( CArray )
         Constructor = <%
             // Check for valid array size
             if ( args.Length() < 1 )
-                return ThrowException( String::New( "Expected integer for argument 1" ) );
+                return ThrowException( String::New( "Expected array size" ) );
             else if ( !args[0]->IsInt32() )
-                return ThrowException( String::New( "Expected integer for argument 1" ) );
-            else if ( args[0]->IntegerValue() < 1 )
+                return ThrowException( String::New( "Array size must be integer" ) );
+            else if ( args[0]->Int32Value() < 1 )
                 return ThrowException( String::New( "Invalid array size" ) );
             
             // Create array
@@ -126,6 +136,11 @@ with( CArray )
 
             // Get array field
             return Number::New( array->array[index] );
+        %>
+
+        Getters.length = <%
+            carray_double *array = (carray_double *)Local<External>::Cast( info.This()->GetInternalField( 1 ) )->Value();
+            return Integer::New( array->size );
         %>
     }
 
