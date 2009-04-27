@@ -8,7 +8,7 @@ with( MPI )
         Include("<stddef.h>");
         
         Extra = <% 
-        #define BUFFER_COUNT 2048
+        //#define BUFFER_COUNT 2048
         #define HEAD_BUF_SIZE 128
         #define BUFFER_SIZE 2047
         //#define BUFFER_SIZE (BUFFER_COUNT*sizeof(int))
@@ -42,6 +42,8 @@ with( MPI )
         int last_rcv_source=0, last_rcv_tag=0;
         int rank;
         int size;
+        MPI_Op reduceop;
+				//MPI_Op_create((MPI_User_function*) myreduceop, 1, &reduceop);
 
         void ExtendBuffer( fragment **buffer )
         {
@@ -191,14 +193,14 @@ with( MPI )
         }
         
 				//*************************** jsMPI_HeadPack *******************************//
-				void jsMPI_HeadPack( char *packBuf, int *pos, Handle<Value> item )
+				void jsMPI_HeadPack( char *packBuf, int *pos, Handle<Value> item, int hbuf_size )
 				{
 					if ( item->IsInt32() )
 					{
 						// Integer
 						int value = item->IntegerValue();
-						MPI_Pack( (void *)&jsMPI_Integer, 1, MPI_INT, packBuf, BUFFER_SIZE, pos, MPI_COMM_WORLD );
-						MPI_Pack( &value, 1, MPI_INT, packBuf, BUFFER_SIZE, pos, MPI_COMM_WORLD );
+						MPI_Pack( (void *)&jsMPI_Integer, 1, MPI_INT, packBuf, hbuf_size, pos, MPI_COMM_WORLD );
+						MPI_Pack( &value, 1, MPI_INT, packBuf, hbuf_size, pos, MPI_COMM_WORLD );
 					}
 					else if ( item->IsString() || item->IsFunction())
 					{
@@ -206,25 +208,25 @@ with( MPI )
 						String::Utf8Value Str( item->ToString() );
 						int StrLength = Str.length();
 					  if ( item->IsString() )
-							MPI_Pack( (void *)&jsMPI_String, 1, MPI_INT, packBuf, BUFFER_SIZE, pos, MPI_COMM_WORLD );
+							MPI_Pack( (void *)&jsMPI_String, 1, MPI_INT, packBuf, hbuf_size, pos, MPI_COMM_WORLD );
 						else
-							MPI_Pack((void *)&jsMPI_Function, 1, MPI_INT, packBuf, BUFFER_SIZE, pos, MPI_COMM_WORLD);
-						MPI_Pack( &StrLength, 1, MPI_INT, packBuf, BUFFER_SIZE, pos, MPI_COMM_WORLD );
-						MPI_Pack( *Str, Str.length(), MPI_BYTE, packBuf, BUFFER_SIZE, pos, MPI_COMM_WORLD );
+							MPI_Pack((void *)&jsMPI_Function, 1, MPI_INT, packBuf, hbuf_size, pos, MPI_COMM_WORLD);
+						MPI_Pack( &StrLength, 1, MPI_INT, packBuf, hbuf_size, pos, MPI_COMM_WORLD );
+						MPI_Pack( *Str, Str.length(), MPI_BYTE, packBuf, hbuf_size, pos, MPI_COMM_WORLD );
 					}
 					else if ( item->IsNumber() )
 					{
 						// Double
 						double value = item->NumberValue();
-						MPI_Pack( (void *)&jsMPI_Number, 1, MPI_INT, packBuf, BUFFER_SIZE, pos, MPI_COMM_WORLD );
-						MPI_Pack( &value, 1, MPI_DOUBLE, packBuf, BUFFER_SIZE, pos, MPI_COMM_WORLD );
+						MPI_Pack( (void *)&jsMPI_Number, 1, MPI_INT, packBuf, hbuf_size, pos, MPI_COMM_WORLD );
+						MPI_Pack( &value, 1, MPI_DOUBLE, packBuf, hbuf_size, pos, MPI_COMM_WORLD );
 					}
 					else if ( item->IsBoolean() )
 					{
 						// Boolean
 						int value = (int)item->BooleanValue();
-						MPI_Pack( (void *)&jsMPI_Boolean, 1, MPI_INT, packBuf, BUFFER_SIZE, pos, MPI_COMM_WORLD );
-						MPI_Pack( &value, 1, MPI_INT, packBuf, BUFFER_SIZE, pos, MPI_COMM_WORLD );
+						MPI_Pack( (void *)&jsMPI_Boolean, 1, MPI_INT, packBuf, hbuf_size, pos, MPI_COMM_WORLD );
+						MPI_Pack( &value, 1, MPI_INT, packBuf, hbuf_size, pos, MPI_COMM_WORLD );
 					}
 					else if ( item->IsObject() || item->IsArray())
 					{
@@ -234,20 +236,20 @@ with( MPI )
 						// Objects
 						if ( item->IsArray() )
 						{
-							MPI_Pack( (void *)&jsMPI_Array, 1, MPI_INT, packBuf, BUFFER_SIZE, pos, MPI_COMM_WORLD );
+							MPI_Pack( (void *)&jsMPI_Array, 1, MPI_INT, packBuf, hbuf_size, pos, MPI_COMM_WORLD );
 						}
 						else
 						{
-							MPI_Pack( (void *)&jsMPI_Object, 1, MPI_INT, packBuf, BUFFER_SIZE, pos, MPI_COMM_WORLD );
+							MPI_Pack( (void *)&jsMPI_Object, 1, MPI_INT, packBuf, hbuf_size, pos, MPI_COMM_WORLD );
 						}
-						MPI_Pack( (void *)&KeyCount, 1, MPI_INT, packBuf, BUFFER_SIZE, pos, MPI_COMM_WORLD );
+						MPI_Pack( (void *)&KeyCount, 1, MPI_INT, packBuf, hbuf_size, pos, MPI_COMM_WORLD );
 						for ( int i=0; i<ObjKeys->Length(); i++ )
 						{
 							HandleScope handle_scope;
 							Handle<Value> Key = ObjKeys->Get( Integer::New( i ) );
 							Handle<Value> Val = Obj->Get( Key );
-							jsMPI_HeadPack( packBuf, pos, Key );
-							jsMPI_HeadPack( packBuf, pos, Val );
+							jsMPI_HeadPack( packBuf, pos, Key, hbuf_size );
+							jsMPI_HeadPack( packBuf, pos, Val, hbuf_size );
 						}
 					}
 				}
@@ -335,17 +337,17 @@ with( MPI )
             }
         }
 				//********************************** jsMPI_HeadUnpack **************************************//
-				Handle<Value> jsMPI_HeadUnpack( char *buffer, int *position, int *IsBcast)
+				Handle<Value> jsMPI_HeadUnpack( char *buffer, int *position, int *IsBcast, int hbuf_size)
 				{
 					int jsMPI_Type ;
-					MPI_Unpack( buffer, BUFFER_SIZE, position, &jsMPI_Type, 1, MPI_INT, MPI_COMM_WORLD );
+					MPI_Unpack( buffer, hbuf_size, position, &jsMPI_Type, 1, MPI_INT, MPI_COMM_WORLD );
 					switch ( jsMPI_Type )
 					{
 						case jsMPI_Fragment:
 							int numfrags;
 							//printf("Got datatype fragment\n");
               //fflush(stdout);
-							MPI_Unpack( buffer, BUFFER_COUNT-1, position, &numfrags, 1, MPI_INT, MPI_COMM_WORLD );
+							MPI_Unpack( buffer, BUFFER_SIZE, position, &numfrags, 1, MPI_INT, MPI_COMM_WORLD );
 							//printf("Got # fragment %d\n", numfrags);
               //fflush(stdout);
 							if(numfrags == 0)
@@ -354,15 +356,15 @@ with( MPI )
 							return Integer::New( numfrags );
 						case jsMPI_Integer:
 							int intvalue;
-							MPI_Unpack( buffer, BUFFER_SIZE, position, &intvalue, 1, MPI_INT, MPI_COMM_WORLD );
+							MPI_Unpack( buffer, hbuf_size, position, &intvalue, 1, MPI_INT, MPI_COMM_WORLD );
 							return Integer::New( intvalue );
 				
 						case jsMPI_String:
 						case jsMPI_Function:
 							int length;
-							char str[BUFFER_SIZE];
-							MPI_Unpack( buffer, BUFFER_SIZE, position, &length, 1, MPI_INT, MPI_COMM_WORLD );
-							MPI_Unpack( buffer, BUFFER_SIZE, position, str, length, MPI_BYTE, MPI_COMM_WORLD );
+							char str[hbuf_size];
+							MPI_Unpack( buffer, hbuf_size, position, &length, 1, MPI_INT, MPI_COMM_WORLD );
+							MPI_Unpack( buffer, hbuf_size, position, str, length, MPI_BYTE, MPI_COMM_WORLD );
 							if(jsMPI_Type == jsMPI_Function)
 							{
 							    Handle<Value> Result;
@@ -374,26 +376,26 @@ with( MPI )
 				
 						case jsMPI_Number:
 							double dblvalue;
-							MPI_Unpack( buffer, BUFFER_SIZE, position, &dblvalue, 1, MPI_DOUBLE, MPI_COMM_WORLD );
+							MPI_Unpack( buffer, hbuf_size, position, &dblvalue, 1, MPI_DOUBLE, MPI_COMM_WORLD );
 							return Number::New( dblvalue );
 				
 						case jsMPI_Boolean:
 							int boolvalue;
-							MPI_Unpack( buffer, BUFFER_SIZE, position, &boolvalue, 1, MPI_INT, MPI_COMM_WORLD );
+							MPI_Unpack( buffer, hbuf_size, position, &boolvalue, 1, MPI_INT, MPI_COMM_WORLD );
 							return Boolean::New( (bool) boolvalue );
 						case jsMPI_Object:
 						case jsMPI_Array:
 						{
 							int KeyCount,i;
-							MPI_Unpack(buffer, BUFFER_SIZE, position, &KeyCount, 1, MPI_INT, MPI_COMM_WORLD);
+							MPI_Unpack(buffer, hbuf_size, position, &KeyCount, 1, MPI_INT, MPI_COMM_WORLD);
 							Handle<Object> Obj = Object::New();
 							Handle<Array> ObjArr = Array::New();
 							Handle<Value> key;
 							Handle<Value> value;
 							for(i=0; i<KeyCount; i++)
 							{
-								key=jsMPI_HeadUnpack(buffer, position, IsBcast);
-								value=jsMPI_HeadUnpack(buffer, position, IsBcast);
+								key=jsMPI_HeadUnpack(buffer, position, IsBcast, hbuf_size);
+								value=jsMPI_HeadUnpack(buffer, position, IsBcast, hbuf_size);
 								if(jsMPI_Type ==  jsMPI_Object)
 									Obj->Set(key, value);
 								else
@@ -463,7 +465,7 @@ with( MPI )
                 stag = 0;
 
             // Pack object into buffer
-            int position = 0, bcast_frags=0;
+            int position = 0;
             fragment *buffer = new fragment;
             buffer->position = 0;
             buffer->next = 0;
@@ -507,17 +509,16 @@ with( MPI )
 						else
 							bcaster = args[0]->IntegerValue();
 					
-            int position = 0, bcast_frags=0, IsBcast = 1;
 						fragment *buffer = new fragment;
 						buffer->position = 0;
 						buffer->next = 0;
 						if(bcaster == rank)
 						{
-								if(jsMPI_Pack_size(args[1]) > BUFFER_SIZE)
+								if(jsMPI_Pack_size(args[1]) > (BUFFER_SIZE))
 								{
 									jsMPI_Pack( &buffer, args[1]);
-									//printf("Needed to be fragmented %d\n", jsMPI_Pack_size(args[1]));
-									//fflush(stdout);
+                  //printf("Needed to be fragmented %d\n", jsMPI_Pack_size(args[1]));
+                  fflush(stdout);
 									// Count fragments
 									int numFrags = 0;
 									fragment *thisFrag = buffer;
@@ -530,11 +531,12 @@ with( MPI )
 									// Send fragment header if necessary
 									if ( numFrags > 0 )
 									{
-											char hdrbuf[32];
+											char hdrbuf[HEAD_BUF_SIZE];
 											int hdrpos = 0;
-											MPI_Pack( (int *)&jsMPI_Fragment, 1, MPI_INT, hdrbuf, 32*sizeof(char), &hdrpos, MPI_COMM_WORLD);
-											MPI_Pack( &numFrags, 1, MPI_INT, hdrbuf, 32*sizeof(char), &hdrpos, MPI_COMM_WORLD );
+											MPI_Pack( (int *)&jsMPI_Fragment, 1, MPI_INT, hdrbuf, HEAD_BUF_SIZE, &hdrpos, MPI_COMM_WORLD);
+											MPI_Pack( &numFrags, 1, MPI_INT, hdrbuf, HEAD_BUF_SIZE, &hdrpos, MPI_COMM_WORLD );
 											MPI_Bcast( hdrbuf, hdrpos, MPI_PACKED, bcaster, MPI_COMM_WORLD);
+                      //free(hdrbuf);
 											//printf("\n broadcasting header of size %d frags %d\n", hdrpos, numFrags);
 											//fflush(stdout);
 									}
@@ -547,7 +549,7 @@ with( MPI )
 											MPI_Bcast( buffer->data, buffer->position, MPI_PACKED, bcaster, MPI_COMM_WORLD);
 											fragment *oldFrag = buffer;
 											buffer = buffer->next;
-											delete oldFrag;
+											//delete oldFrag;
 									} while (buffer);
 									return Undefined();
 								}
@@ -565,13 +567,13 @@ with( MPI )
 									//fflush(stdout);
 									
 									MPI_Bcast( hdrbuf, hdrpos, MPI_PACKED, bcaster, MPI_COMM_WORLD);
-									
-									//printf("\n header broadcasted\n");
-									//fflush(stdout);
+									//free(hdrbuf);
+                  //printf("\n header broadcasted by %d\n", bcaster);
+                  //fflush(stdout);
 
-									jsMPI_HeadPack(tbuf, &position, args[1]);
+									jsMPI_HeadPack(tbuf, &position, args[1], BUFFER_SIZE);
 									MPI_Bcast( tbuf, position, MPI_PACKED, bcaster, MPI_COMM_WORLD);
-									
+									//free(tbuf);	
 									//printf("Broadcasted data of size %d\n", position);
 									//fflush(stdout);
 								}
@@ -580,7 +582,7 @@ with( MPI )
 						{
 								Handle<Value> numfrags;
 								int num;
-								int position=0;
+								int position=0, IsBcast=1;
 								char sbuf[HEAD_BUF_SIZE];
 							
 								//printf("\n Recieved Header from %d\n", bcaster);
@@ -591,7 +593,7 @@ with( MPI )
 								//printf("M here %d\n", rank);
 								//fflush(sTdout);
 								
-								numfrags = jsMPI_HeadUnpack(sbuf, &position, &IsBcast);
+								numfrags = jsMPI_HeadUnpack(sbuf, &position, &IsBcast, HEAD_BUF_SIZE);
 								num=numfrags->Int32Value();
 								//printf("IsBcast=%d # of fragments %d\n", IsBcast, num);
 								//fflush(stdout);
@@ -612,22 +614,21 @@ with( MPI )
 														buffer = newBuffer;
 												}
 										}
-										IsBcast = 0;
 										numfrags = jsMPI_Unpack(buffer);
 								}
 								else
 								{
-										position = 0;
 										char rbuf[BUFFER_SIZE];
 										//printf("Recieving broadcasted data\n");
 										//fflush(stdout);
 										MPI_Bcast( rbuf, BUFFER_SIZE, MPI_PACKED, bcaster, MPI_COMM_WORLD );
 										//printf("Recieved broadcasted data\n");
 										//fflush(stdout);
-										numfrags = jsMPI_HeadUnpack(rbuf, &position, &IsBcast);
+										position = 0;
+										numfrags = jsMPI_HeadUnpack(rbuf, &position, &IsBcast, BUFFER_SIZE);
 								}
 
-								delete buffer;
+                delete buffer;
 								//delete tbuf;
 								return numfrags;
 						}
@@ -760,29 +761,22 @@ with( MPI )
                 // Size parameter is not used for now
                 return False();
             }
-            char sbuf[BUFFER_SIZE], rbuf[BUFFER_SIZE];
             int position = 0;
             
             if ( args[0]->IsInt32() )
             {
                 // Integer
-                int value = args[0]->IntegerValue(); // Pack array here
+                int value = args[0]->IntegerValue(); 
                 int result ;
-                //MPI_Pack( (void *)&jsMPI_Integer, 1, MPI_INT, buffer, BUFFER_SIZE, &position, MPI_COMM_WORLD );
-                //MPI_Pack(&value, 1, MPI_INT, sbuf, BUFFER_SIZE, &position, MPI_COMM_WORLD );
                 switch(args[2]->IntegerValue())
                 {
                     case 0:
-                        //MPI_Reduce(sbuf, rbuf, position, MPI_INT, add, 0, MPI_COMM_WORLD);
                         result = 0;
                         retval=MPI_Reduce(&value, &result, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-                        //MPI_Unpack(rbuf, BUFFER_SIZE, &position, &value, 1, MPI_INT, MPI_COMM_WORLD);
                         break;
                     case 1:
-                        //MPI_Reduce(sbuf, rbuf, position, MPI_INT, multiply, 0, MPI_COMM_WORLD);
                         result = 1;
                         retval=MPI_Reduce(&value, &result, 1, MPI_INT, MPI_PROD, 0, MPI_COMM_WORLD);
-                        //MPI_Unpack(rbuf, BUFFER_SIZE, &position, &value, 1, MPI_INT, MPI_COMM_WORLD);
                         break;
                     default:
                         printf("ERROR:: Unsupported function in Reduce. Exiting\n");
@@ -794,6 +788,10 @@ with( MPI )
                 return Null();
         %>
         
+        //****************************** MPI.Barrier() ****************************//
+        Functions.Barrier = <%
+            MPI_Barrier(MPI_COMM_WORLD);
+            %>
         //****************************** MPI.Wtick() ****************************//
         Functions.Wtick = <%
             double time;
@@ -813,73 +811,5 @@ with( MPI )
             MPI_Finalize();
         %>
         
-        //****************************** MPI.TSend() ****************************//
-/*
- *        Functions.TSend = <%
- *            int sdst, stag=0;
- *
- *            // Check arguments
- *            if ( args.Length() < 1 )
- *                return False();
- *            
- *            // Get destination        
- *            if ( args.Length() < 2 )
- *                return False();
- *            else
- *                sdst = args[1]->IntegerValue();
- *            
- *            // Get tag
- *            if ( args.Length() >= 3 )
- *                stag = args[2]->IntegerValue(); 
- *            else 
- *                stag = 0;
- *
- *            // Pack object into buffer
- *            int position = 0, bcast_frags=0;
- *            char *tbuf;
- *            tbuf =  new char[BUFFER_HSIZE];
- *            jsMPI_HeadPack( tbuf, &position, args[0] );
- *
- *            MPI_Send( tbuf, position, MPI_PACKED, sdst, stag, MPI_COMM_WORLD);
- *            return Undefined();
- *        %>
- *        /[>***************************** MPI.TRecv() ***************************<]/
- *        Functions.TRecv = <%
- *            int src,rtag, retval=0;
- *            if ( args.Length() < 1 )
- *            {
- *                src = MPI_ANY_SOURCE;
- *                rtag = MPI_ANY_TAG;
- *            }
- *            else if (args.Length() == 1)
- *            {
- *                src = args[0]->IntegerValue();
- *                rtag = MPI_ANY_TAG;
- *            }
- *            else if (args.Length() == 2)        
- *            {
- *                src = args[0]->IntegerValue();
- *                rtag = args[1]->IntegerValue();
- *            }
- *
- *            // Receive message                
- *            char *tbuf;
- *            tbuf =  new char[BUFFER_HSIZE];
- *            int position = 0;
- *            int size;
- *            MPI_Recv( tbuf, BUFFER_HSIZE, MPI_PACKED, src, rtag, MPI_COMM_WORLD, &rstatus );
- *
- *               
- *            // Unpack object
- *            last_rcv_tag = rstatus.MPI_TAG;
- *            last_rcv_source = rstatus.MPI_SOURCE;
- *            int IsBcast = 0;
- *            Handle<Value> val=jsMPI_HeadUnpack(tbuf, &position, &IsBcast);
- *            //delete buffer;
- *
- *            return val;
- *        %>
- */
-        
-            Export();
+    Export();
 }
